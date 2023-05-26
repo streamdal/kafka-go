@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"net"
 	"sync"
@@ -11,6 +12,7 @@ import (
 	"time"
 
 	metadataAPI "github.com/segmentio/kafka-go/protocol/metadata"
+	"github.com/streamdal/dataqual"
 )
 
 // The Writer type provides the implementation of a producer of kafka messages
@@ -220,6 +222,9 @@ type Writer struct {
 
 	// non-nil when a transport was created by NewWriter, remove in 1.0.
 	transport *Transport
+
+	// DataQual is Streamdal's data quality enforcement library
+	DataQual *dataqual.DataQual
 }
 
 // WriterConfig is a configuration type used to create new instances of Writer.
@@ -515,6 +520,19 @@ func NewWriter(config WriterConfig) *Writer {
 		w.Compression = Compression(config.CompressionCodec.Code())
 	}
 
+	// Begin streamdal shim
+	// Expects PLUMBER_URL and PLUMBER_TOKEN env variables to be set. If not, dq will be nil.
+	dq, err := dataqual.New(&dataqual.Config{
+		Bus:         "kafka",
+		ShutdownCtx: context.Background(),
+	})
+	if err != nil {
+		panic(fmt.Sprintf("failed to initialize Streamdal data quality library: %s", err))
+	}
+
+	w.DataQual = dq
+	// End streamdal shim
+
 	return w
 }
 
@@ -639,11 +657,34 @@ func (w *Writer) WriteMessages(ctx context.Context, msgs ...Message) error {
 	// to increasing GC work.
 	assignments := make(map[topicPartition][]int32)
 
-	for i, msg := range msgs {
+	newMsgs := make([]Message, 0) // Streamdal modification
+	var i int
+
+	for _, msg := range msgs {
 		topic, err := w.chooseTopic(msg)
 		if err != nil {
 			return err
 		}
+
+		// Begin streamdal shim
+		if w.DataQual != nil {
+			data, err := w.DataQual.ApplyRules(dataqual.Producer, msg.Topic, msg.Value)
+			if err != nil {
+				w.ErrorLogger.Printf("Error applying data quality rules: %v", err)
+				continue
+			}
+
+			if data == nil {
+				w.Logger.Printf("Message dropped by data quality rules")
+				// TODO: remove element from slice
+				continue
+			}
+
+			msg.Value = data
+		}
+
+		newMsgs = append(newMsgs, msg)
+		// End streamdal shim
 
 		numPartitions, err := w.partitions(ctx, topic)
 		if err != nil {
@@ -658,9 +699,11 @@ func (w *Writer) WriteMessages(ctx context.Context, msgs ...Message) error {
 		}
 
 		assignments[key] = append(assignments[key], int32(i))
+
+		i++ // Streamdal modification
 	}
 
-	batches := w.batchMessages(msgs, assignments)
+	batches := w.batchMessages(newMsgs, assignments) // Streamdal modification: newMsgs instead of msgs
 	if w.Async {
 		return nil
 	}
