@@ -11,6 +11,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/streamdal/dataqual"
 )
 
 const (
@@ -91,6 +93,8 @@ type Reader struct {
 	// reader stats are all made of atomic values, no need for synchronization.
 	// Use a pointer to ensure 64-bit alignment of the values.
 	stats *readerStats
+
+	DataQual *dataqual.DataQual
 }
 
 // useConsumerGroup indicates whether the Reader is part of a consumer group.
@@ -742,6 +746,19 @@ func NewReader(config ReaderConfig) *Reader {
 		go r.run(cg)
 	}
 
+	// Begin streamdal shim
+	// Expects PLUMBER_URL and PLUMBER_TOKEN env variables to be set. If not, dq will be nil.
+	dq, err := dataqual.New(&dataqual.Config{
+		Bus:         "kafka",
+		ShutdownCtx: context.Background(),
+	})
+	if err != nil {
+		panic(fmt.Sprintf("failed to initialize Streamdal data quality library: %s", err))
+	}
+
+	r.DataQual = dq
+	// End streamdal shim
+
 	return r
 }
 
@@ -854,6 +871,23 @@ func (r *Reader) FetchMessage(ctx context.Context) (Message, error) {
 					// the error with io.ErrUnexpectedEOF.
 					m.error = io.ErrUnexpectedEOF
 				}
+
+				// Begin streamdal shim
+				if r.DataQual != nil {
+					for _, topic := range r.getTopics() {
+						data, err := r.DataQual.ApplyRules(dataqual.Consumer, topic, m.message.Value)
+						if err != nil {
+							return Message{}, fmt.Errorf("error applying data quality rules: %s", err)
+						}
+
+						if data == nil {
+							return Message{}, errors.New("message dropped by data quality rules")
+						}
+
+						m.message.Value = data
+					}
+				}
+				// End streamdal shim
 
 				return m.message, m.error
 			}

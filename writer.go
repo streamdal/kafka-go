@@ -676,7 +676,6 @@ func (w *Writer) WriteMessages(ctx context.Context, msgs ...Message) error {
 
 			if data == nil {
 				w.Logger.Printf("Message dropped by data quality rules")
-				// TODO: remove element from slice
 				continue
 			}
 
