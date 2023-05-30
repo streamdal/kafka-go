@@ -874,18 +874,16 @@ func (r *Reader) FetchMessage(ctx context.Context) (Message, error) {
 
 				// Begin streamdal shim
 				if r.DataQual != nil {
-					for _, topic := range r.getTopics() {
-						data, err := r.DataQual.ApplyRules(dataqual.Consumer, topic, m.message.Value)
-						if err != nil {
-							return Message{}, fmt.Errorf("error applying data quality rules: %s", err)
-						}
-
-						if data == nil {
-							return Message{}, errors.New("message dropped by data quality rules")
-						}
-
-						m.message.Value = data
+					data, err := r.DataQual.ApplyRules(dataqual.Consumer, m.message.Topic, m.message.Value)
+					if err != nil {
+						return Message{}, fmt.Errorf("error applying data quality rules: %s", err)
 					}
+
+					if data == nil {
+						return Message{}, errors.New("message dropped by data quality rules")
+					}
+
+					m.message.Value = data
 				}
 				// End streamdal shim
 
