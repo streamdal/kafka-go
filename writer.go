@@ -669,7 +669,7 @@ func (w *Writer) WriteMessages(ctx context.Context, msgs ...Message) error {
 
 		// Begin streamdal shim
 		if w.DataQual != nil {
-			data, err := w.DataQual.ApplyRules(dataqual.Producer, msg.Topic, msg.Value)
+			data, err := w.DataQual.ApplyRules(dataqual.Publish, msg.Topic, msg.Value)
 			if err != nil {
 				w.ErrorLogger.Printf("Error applying data quality rules: %s", err)
 				continue
