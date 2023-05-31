@@ -67,8 +67,8 @@ github.com/rogpeppe/fastuuid v1.2.0/go.mod h1:jVj6XXZzXRy/MSR5jhDC/2q6DgLz+nrA6L
 github.com/segmentio/kafka-go v0.4.40 h1:sszW7c0/uyv7+VcTW5trx2ZC7kMWDTxuR/6Zn8U1bm8=
 github.com/segmentio/kafka-go v0.4.40/go.mod h1:naFEZc5MQKdeL3W6NkZIAn48Y6AazqjRFDhnXeg3h94=
 github.com/spaolacci/murmur3 v0.0.0-20180118202830-f09979ecbc72/go.mod h1:JwIasOWyU6f++ZhiEuf87xNszmSA2myDM2Kzu9HwQUA=
-github.com/streamdal/dataqual v0.0.10 h1:vzhZWQuN7/mvHvkX4XWiZUWuHW9U89BcLIGPIhjyj20=
-github.com/streamdal/dataqual v0.0.10/go.mod h1:eU5BOGx8SZxaCjfh96rYzyD9BSJH/yU7NhlAiDZu7aM=
+github.com/streamdal/dataqual v0.0.11 h1:+QtOmmT27GhuQkdsJ++TzVTSKeE0WyOP8Vl5GLqbu+I=
+github.com/streamdal/dataqual v0.0.11/go.mod h1:eU5BOGx8SZxaCjfh96rYzyD9BSJH/yU7NhlAiDZu7aM=
 github.com/streamdal/pii v0.0.3 h1:JmWatbLdWLqnW2EnJiFVico+wG93wKJcVwwBvFQfdSU=
 github.com/streamdal/pii v0.0.3/go.mod h1:8VCf2un/Db78rFA+PAR65uRTT9ZOD5inbySA1Xgy7Bc=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
