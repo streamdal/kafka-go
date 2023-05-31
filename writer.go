@@ -12,6 +12,7 @@ import (
 	"time"
 
 	metadataAPI "github.com/segmentio/kafka-go/protocol/metadata"
+
 	"github.com/streamdal/dataqual"
 )
 
@@ -670,7 +671,7 @@ func (w *Writer) WriteMessages(ctx context.Context, msgs ...Message) error {
 		if w.DataQual != nil {
 			data, err := w.DataQual.ApplyRules(dataqual.Producer, msg.Topic, msg.Value)
 			if err != nil {
-				w.ErrorLogger.Printf("Error applying data quality rules: %v", err)
+				w.ErrorLogger.Printf("Error applying data quality rules: %s", err)
 				continue
 			}
 
