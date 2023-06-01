@@ -671,12 +671,17 @@ func (w *Writer) WriteMessages(ctx context.Context, msgs ...Message) error {
 		if w.DataQual != nil {
 			data, err := w.DataQual.ApplyRules(dataqual.Publish, msg.Topic, msg.Value)
 			if err != nil {
-				w.ErrorLogger.Printf("Error applying data quality rules: %s", err)
+				w.withErrorLogger(func(l Logger) {
+					l.Printf("Error applying data quality rules: %s", err)
+				})
+
 				continue
 			}
 
 			if data == nil {
-				w.Logger.Printf("Message dropped by data quality rules")
+				w.withLogger(func(l Logger) {
+					l.Printf("Message dropped by data quality rules")
+				})
 				continue
 			}
 
