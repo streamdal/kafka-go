@@ -1,4 +1,4 @@
-module github.com/streamdal/kafka-go
+module github.com/streamdal/segmentio-kafka-go
 
 go 1.15
 

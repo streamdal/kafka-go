@@ -880,7 +880,10 @@ func (r *Reader) FetchMessage(ctx context.Context) (Message, error) {
 					}
 
 					if data == nil {
-						return Message{}, errors.New("message dropped by data quality rules")
+						r.withLogger(func(l Logger) {
+							l.Printf("dropping offset '%d' due to data quality rule", m.message.Offset)
+						})
+						return Message{}, nil
 					}
 
 					m.message.Value = data
