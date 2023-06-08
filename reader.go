@@ -874,7 +874,7 @@ func (r *Reader) FetchMessage(ctx context.Context) (Message, error) {
 
 				// Begin streamdal shim
 				if r.DataQual != nil {
-					data, err := r.DataQual.ApplyRules(dataqual.Consume, m.message.Topic, m.message.Value)
+					data, err := r.DataQual.ApplyRules(ctx, dataqual.Consume, m.message.Topic, m.message.Value)
 					if err != nil {
 						return Message{}, fmt.Errorf("error applying data quality rules: %s", err)
 					}
