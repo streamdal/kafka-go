@@ -749,7 +749,7 @@ func NewReader(config ReaderConfig) *Reader {
 	// Begin streamdal shim
 	// Expects PLUMBER_URL and PLUMBER_TOKEN env variables to be set. If not, dq will be nil.
 	dq, err := dataqual.New(&dataqual.Config{
-		Bus:         "kafka",
+		DataSource:  "kafka",
 		ShutdownCtx: context.Background(),
 	})
 	if err != nil {
