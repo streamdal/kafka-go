@@ -5,8 +5,8 @@ github.com/CosmWasm/tinyjson v0.9.0 h1:sPjgikATp5W0vD/v/Qz99uQ6G/lh/SuK0Wfskqua4
 github.com/CosmWasm/tinyjson v0.9.0/go.mod h1:5+7QnSKrkIWnpIdhUT2t2EYzXnII3/3MlM0oDsBSbc8=
 github.com/OneOfOne/xxhash v1.2.2/go.mod h1:HSdplMjZKSmBqAxg5vPj2TmRDmfkzw+cTzAElWljhcU=
 github.com/antihax/optional v1.0.0/go.mod h1:uupD/76wgC+ih3iEmQUL+0Ugr19nfwCT1kdvxnR2qWY=
-github.com/batchcorp/plumber-schemas v0.0.183-0.20230615195206-e121216dd959 h1:wQqJOz/dYMTTl2aVcbujUrvNn7p4zBSb4ZGAnW+i7qU=
-github.com/batchcorp/plumber-schemas v0.0.183-0.20230615195206-e121216dd959/go.mod h1:8HkOEly65MKPTi49/lvhS5yn/jZaGuffgO5djTByJsY=
+github.com/batchcorp/plumber-schemas v0.0.183-0.20230621170848-defb9d7c53b3 h1:Tfb5VfGfgYySjIFnIEVE8lpgDVpnFn0Sa1l0k/yHiVU=
+github.com/batchcorp/plumber-schemas v0.0.183-0.20230621170848-defb9d7c53b3/go.mod h1:8HkOEly65MKPTi49/lvhS5yn/jZaGuffgO5djTByJsY=
 github.com/buger/jsonparser v1.1.1 h1:2PnMjfWD7wBILjqQbt530v576A/cAbQvEW9gGIpYMUs=
 github.com/buger/jsonparser v1.1.1/go.mod h1:6RYKKt7H4d4+iWqouImQ9R2FZql3VbhNgx27UK13J/0=
 github.com/census-instrumentation/opencensus-proto v0.2.1/go.mod h1:f6KPmirojxKA12rnyqOA5BBL4O983OfeGPqjHWSTneU=
@@ -135,8 +135,8 @@ github.com/smartystreets/assertions v0.0.0-20180927180507-b2de0cb4f26d/go.mod h1
 github.com/smartystreets/goconvey v1.6.4 h1:fv0U8FUIMPNf1L9lnHLvLhgicrIVChEkdzIKYqbNC9s=
 github.com/smartystreets/goconvey v1.6.4/go.mod h1:syvi0/a8iFYH4r/RixwvyeAJjdLS9QV7WQ/tjFTllLA=
 github.com/spaolacci/murmur3 v0.0.0-20180118202830-f09979ecbc72/go.mod h1:JwIasOWyU6f++ZhiEuf87xNszmSA2myDM2Kzu9HwQUA=
-github.com/streamdal/dataqual v0.0.19-0.20230620185622-328ff8e5adff h1:yWhbfskQ6BxxeFh4SpRr6hdD1taJ1IrDXd8Pddn4thA=
-github.com/streamdal/dataqual v0.0.19-0.20230620185622-328ff8e5adff/go.mod h1:qH9SXibZodOQzz6p0hdROo9G0hSxC1iCK7NrQjWZFZI=
+github.com/streamdal/dataqual v0.0.19-0.20230621173251-96178f2c8a61 h1:6KyVh4JgMZapH0mHHcPNXlrHA4nIm8ymT6SlMFEc+hk=
+github.com/streamdal/dataqual v0.0.19-0.20230621173251-96178f2c8a61/go.mod h1:wdaQgH0w0iuDh3bZtwRQ2Z8SFk06Y/tuM4XrzA5l+LM=
 github.com/streamdal/pii v0.0.4-0.20230607185452-2896fc3a28a4 h1:dyhUHNJ9sApY4ND3UAyjyeZXwa3WiFyNUDME1CfUe6I=
 github.com/streamdal/pii v0.0.4-0.20230607185452-2896fc3a28a4/go.mod h1:w9abah7PCw1Z2xQqvk0AVS48cbKTE3EpA39M0/P02uw=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
