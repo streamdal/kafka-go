@@ -11,9 +11,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	metadataAPI "github.com/segmentio/kafka-go/protocol/metadata"
+	"github.com/streamdal/snitch-go-client"
 
-	"github.com/streamdal/dataqual"
+	metadataAPI "github.com/segmentio/kafka-go/protocol/metadata"
 )
 
 // The Writer type provides the implementation of a producer of kafka messages
@@ -224,8 +224,8 @@ type Writer struct {
 	// non-nil when a transport was created by NewWriter, remove in 1.0.
 	transport *Transport
 
-	// DataQual is Streamdal's data quality enforcement library
-	DataQual *dataqual.DataQual
+	// Snitch is Streamdal's data quality enforcement library
+	Snitch *snitch.Snitch
 }
 
 // WriterConfig is a configuration type used to create new instances of Writer.
@@ -522,16 +522,16 @@ func NewWriter(config WriterConfig) *Writer {
 	}
 
 	// Begin streamdal shim
-	// Expects PLUMBER_URL and PLUMBER_TOKEN env variables to be set. If not, dq will be nil.
-	dq, err := dataqual.New(&dataqual.Config{
+	// Expects PLUMBER_URL and PLUMBER_TOKEN env variables to be set. If not, sc will be nil.
+	sc, err := snitch.New(&snitch.Config{
 		DataSource:  "kafka",
 		ShutdownCtx: context.Background(),
 	})
 	if err != nil {
-		panic(fmt.Sprintf("failed to initialize Streamdal data quality library: %s", err))
+		panic(fmt.Sprintf("failed to initialize Streamdal Snitch library: %s", err))
 	}
 
-	w.DataQual = dq
+	w.Snitch = sc
 	// End streamdal shim
 
 	return w
@@ -668,8 +668,8 @@ func (w *Writer) WriteMessages(ctx context.Context, msgs ...Message) error {
 		}
 
 		// Begin streamdal shim
-		if w.DataQual != nil {
-			data, err := w.DataQual.ApplyRules(ctx, dataqual.Publish, msg.Topic, msg.Value)
+		if w.Snitch != nil {
+			data, err := w.Snitch.ApplyRules(ctx, snitch.Publish, msg.Topic, msg.Value)
 			if err != nil {
 				w.withErrorLogger(func(l Logger) {
 					l.Printf("Error applying data quality rules: %s", err)

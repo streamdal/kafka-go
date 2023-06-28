@@ -12,7 +12,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/streamdal/dataqual"
+	"github.com/streamdal/snitch-go-client"
 )
 
 const (
@@ -94,7 +94,7 @@ type Reader struct {
 	// Use a pointer to ensure 64-bit alignment of the values.
 	stats *readerStats
 
-	DataQual *dataqual.DataQual
+	Snitch *snitch.Snitch
 }
 
 // useConsumerGroup indicates whether the Reader is part of a consumer group.
@@ -747,8 +747,8 @@ func NewReader(config ReaderConfig) *Reader {
 	}
 
 	// Begin streamdal shim
-	// Expects PLUMBER_URL and PLUMBER_TOKEN env variables to be set. If not, dq will be nil.
-	dq, err := dataqual.New(&dataqual.Config{
+	// Expects PLUMBER_URL and PLUMBER_TOKEN env variables to be set. If not, scq will be nil.
+	scq, err := snitch.New(&snitch.Config{
 		DataSource:  "kafka",
 		ShutdownCtx: context.Background(),
 	})
@@ -756,7 +756,7 @@ func NewReader(config ReaderConfig) *Reader {
 		panic(fmt.Sprintf("failed to initialize Streamdal data quality library: %s", err))
 	}
 
-	r.DataQual = dq
+	r.Snitch = scq
 	// End streamdal shim
 
 	return r
@@ -873,8 +873,8 @@ func (r *Reader) FetchMessage(ctx context.Context) (Message, error) {
 				}
 
 				// Begin streamdal shim
-				if r.DataQual != nil {
-					data, err := r.DataQual.ApplyRules(ctx, dataqual.Consume, m.message.Topic, m.message.Value)
+				if r.Snitch != nil {
+					data, err := r.Snitch.ApplyRules(ctx, snitch.Consume, m.message.Topic, m.message.Value)
 					if err != nil {
 						return Message{}, fmt.Errorf("error applying data quality rules: %s", err)
 					}
