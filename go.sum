@@ -135,8 +135,8 @@ github.com/smartystreets/assertions v0.0.0-20180927180507-b2de0cb4f26d/go.mod h1
 github.com/smartystreets/goconvey v1.6.4 h1:fv0U8FUIMPNf1L9lnHLvLhgicrIVChEkdzIKYqbNC9s=
 github.com/smartystreets/goconvey v1.6.4/go.mod h1:syvi0/a8iFYH4r/RixwvyeAJjdLS9QV7WQ/tjFTllLA=
 github.com/spaolacci/murmur3 v0.0.0-20180118202830-f09979ecbc72/go.mod h1:JwIasOWyU6f++ZhiEuf87xNszmSA2myDM2Kzu9HwQUA=
-github.com/streamdal/dataqual v0.0.19-0.20230621181005-aac01a9bbc82 h1:0AFc8Y2LNj9FavA1Bh35jwi7nrktxB0y6nVLyzACPs8=
-github.com/streamdal/dataqual v0.0.19-0.20230621181005-aac01a9bbc82/go.mod h1:wdaQgH0w0iuDh3bZtwRQ2Z8SFk06Y/tuM4XrzA5l+LM=
+github.com/streamdal/dataqual v0.0.20 h1:GURIzg1OunrCP5pZ/PWEdMFdB7sws/nmO8e+hlGU3ao=
+github.com/streamdal/dataqual v0.0.20/go.mod h1:wdaQgH0w0iuDh3bZtwRQ2Z8SFk06Y/tuM4XrzA5l+LM=
 github.com/streamdal/pii v0.0.4-0.20230607185452-2896fc3a28a4 h1:dyhUHNJ9sApY4ND3UAyjyeZXwa3WiFyNUDME1CfUe6I=
 github.com/streamdal/pii v0.0.4-0.20230607185452-2896fc3a28a4/go.mod h1:w9abah7PCw1Z2xQqvk0AVS48cbKTE3EpA39M0/P02uw=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
