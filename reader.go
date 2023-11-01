@@ -5,12 +5,15 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"math"
 	"sort"
 	"strconv"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	streamdal "github.com/streamdal/go-sdk"
 )
 
 const (
@@ -91,6 +94,8 @@ type Reader struct {
 	// reader stats are all made of atomic values, no need for synchronization.
 	// Use a pointer to ensure 64-bit alignment of the values.
 	stats *readerStats
+
+	Streamdal *streamdal.Streamdal // Streamdal addition
 }
 
 // useConsumerGroup indicates whether the Reader is part of a consumer group.
@@ -742,6 +747,19 @@ func NewReader(config ReaderConfig) *Reader {
 		go r.run(cg)
 	}
 
+	// Begin streamdal shim
+	sd, err := streamdal.New(&streamdal.Config{
+		ShutdownCtx: context.Background(),
+		ClientType:  streamdal.ClientTypeShim,
+	})
+	if err != nil {
+		// NewReader() can't return an error, so panic
+		panic(err)
+	}
+
+	r.Streamdal = sd
+	// End streamdal shim
+
 	return r
 }
 
@@ -854,6 +872,37 @@ func (r *Reader) FetchMessage(ctx context.Context) (Message, error) {
 					// the error with io.ErrUnexpectedEOF.
 					m.error = io.ErrUnexpectedEOF
 				}
+
+				// Begin streamdal shim
+				resp, err := r.Streamdal.Process(ctx, &streamdal.ProcessRequest{
+					ComponentName: "kafka",
+					OperationType: streamdal.OperationTypeConsumer,
+					OperationName: m.message.Topic,
+					Data:          m.message.Value,
+				})
+				if err != nil {
+					r.withErrorLogger(func(l Logger) {
+						log.Printf("error applying Streamdal rules: %s", err)
+					})
+					continue
+				}
+
+				if resp.Data == nil {
+					r.withErrorLogger(func(l Logger) {
+						log.Printf("message dropped by Streamdal rules")
+					})
+					continue
+				}
+
+				if resp.Error {
+					r.withErrorLogger(func(l Logger) {
+						log.Printf("failed to run streamdal rule: %s", resp.Message)
+					})
+					continue
+				}
+
+				m.message.Value = resp.Data
+				// End streamdal shim
 
 				return m.message, m.error
 			}
