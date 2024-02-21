@@ -10,7 +10,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	streamdal "github.com/streamdal/go-sdk"
+	streamdal "github.com/streamdal/streamdal/sdks/go"
 
 	metadataAPI "github.com/segmentio/kafka-go/protocol/metadata"
 )
@@ -669,31 +669,16 @@ func (w *Writer) WriteMessages(ctx context.Context, msgs ...Message) error {
 
 		// Begin streamdal shim
 		if w.Streamdal != nil {
-			resp, err := w.Streamdal.Process(ctx, &streamdal.ProcessRequest{
+			resp := w.Streamdal.Process(ctx, &streamdal.ProcessRequest{
 				ComponentName: "kafka",
 				OperationType: streamdal.OperationTypeProducer,
 				OperationName: msg.Topic,
 				Data:          msg.Value,
 			})
 
-			if err != nil {
+			if resp.Status == streamdal.ExecStatusError {
 				w.withErrorLogger(func(l Logger) {
 					l.Printf("Error applying Streamdal rules: %s", err)
-				})
-			}
-
-			if resp.Data == nil {
-				w.withLogger(func(l Logger) {
-					l.Printf("Message dropped by Streamdal rules")
-				})
-
-				continue
-			}
-
-			if resp.Error {
-				w.withLogger(func(l Logger) {
-					l.Printf("failed to run streamdal rule: %s", resp.Message)
-
 				})
 				continue
 			}
