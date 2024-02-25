@@ -11,6 +11,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	streamdal "github.com/streamdal/streamdal/sdks/go"
 )
 
 const (
@@ -91,6 +93,8 @@ type Reader struct {
 	// reader stats are all made of atomic values, no need for synchronization.
 	// Use a pointer to ensure 64-bit alignment of the values.
 	stats *readerStats
+
+	Streamdal *streamdal.Streamdal // Streamdal addition
 }
 
 // useConsumerGroup indicates whether the Reader is part of a consumer group.
@@ -522,6 +526,9 @@ type ReaderConfig struct {
 	// This flag is being added to retain backwards-compatibility, so it will be
 	// removed in a future version of kafka-go.
 	OffsetOutOfRangeError bool
+
+	// Turn Streamdal integration on/off
+	EnableStreamdal bool
 }
 
 // Validate method validates ReaderConfig properties.
@@ -744,6 +751,18 @@ func NewReader(config ReaderConfig) *Reader {
 		go r.run(cg)
 	}
 
+	// Streamdal shim BEGIN
+	if config.EnableStreamdal {
+		sc, err := streamdalSetup()
+		if err != nil {
+			// NewReader does not return error, can only panic
+			panic("unable to setup streamdal for reader: " + err.Error())
+		}
+
+		r.Streamdal = sc
+	}
+	// Streamdal shim END
+
 	return r
 }
 
@@ -857,7 +876,14 @@ func (r *Reader) FetchMessage(ctx context.Context) (Message, error) {
 					m.error = io.ErrUnexpectedEOF
 				}
 
-				return m.message, m.error
+				// Streamdal shim BEGIN
+				newMsg, newErr := streamdalProcess(ctx, r.Streamdal, streamdal.OperationTypeConsumer, &m.message, r.config.ErrorLogger, r.config.Logger)
+				if newErr != nil {
+					return Message{}, errors.New("streamdal error: " + newErr.Error())
+				}
+				// Streamdal shim END
+
+				return *newMsg, m.error // Streamdal mod: return newMsg instead of m.message
 			}
 		}
 	}

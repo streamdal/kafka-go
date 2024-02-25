@@ -1,5 +1,10 @@
 # kafka-go [![CircleCI](https://circleci.com/gh/segmentio/kafka-go.svg?style=shield)](https://circleci.com/gh/segmentio/kafka-go) [![Go Report Card](https://goreportcard.com/badge/github.com/segmentio/kafka-go)](https://goreportcard.com/report/github.com/segmentio/kafka-go) [![GoDoc](https://godoc.org/github.com/segmentio/kafka-go?status.svg)](https://godoc.org/github.com/segmentio/kafka-go)
 
+> [!IMPORTANT]
+> This library is instrumented with [Streamdal's Go SDK](https://github.com/streamdal/streamdal/tree/main/sdks/go).
+>
+> Refer to [README.STREAMDAL.md](README.STREAMDAL.md) for more information.
+
 ## Motivations
 
 We rely on both Go and Kafka a lot at Segment. Unfortunately, the state of the Go
