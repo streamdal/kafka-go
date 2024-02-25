@@ -329,6 +329,9 @@ type WriterConfig struct {
 	// ErrorLogger is the logger used to report errors. If nil, the writer falls
 	// back to using Logger instead.
 	ErrorLogger Logger
+
+	// Turn Streamdal integration on/off
+	EnableStreamdal bool
 }
 
 type topicPartition struct {
@@ -519,18 +522,17 @@ func NewWriter(config WriterConfig) *Writer {
 		w.Compression = Compression(config.CompressionCodec.Code())
 	}
 
-	// Begin streamdal shim
-	sd, err := streamdal.New(&streamdal.Config{
-		ShutdownCtx: context.Background(),
-		ClientType:  streamdal.ClientTypeShim,
-	})
-	if err != nil {
-		// NewWriter() can't return an error, so panic
-		panic(err)
-	}
+	// Streamdal shim BEGIN
+	if config.EnableStreamdal {
+		sc, err := streamdalSetup()
+		if err != nil {
+			// NewWriter does not return error, can only panic
+			panic("unable to setup streamdal for writer: " + err.Error())
+		}
 
-	w.Streamdal = sd
-	// End streamdal shim
+		w.Streamdal = sc
+	}
+	// Streamdal shim END
 
 	return w
 }
@@ -667,26 +669,14 @@ func (w *Writer) WriteMessages(ctx context.Context, msgs ...Message) error {
 			return err
 		}
 
-		// Begin streamdal shim
-		if w.Streamdal != nil {
-			resp := w.Streamdal.Process(ctx, &streamdal.ProcessRequest{
-				ComponentName: "kafka",
-				OperationType: streamdal.OperationTypeProducer,
-				OperationName: msg.Topic,
-				Data:          msg.Value,
-			})
-
-			if resp.Status == streamdal.ExecStatusError {
-				w.withErrorLogger(func(l Logger) {
-					l.Printf("Error applying Streamdal rules: %s", err)
-				})
-				continue
-			}
-
-			msg.Value = resp.Data
-			newMsgs = append(newMsgs, msg)
+		// Streamdal shim BEGIN
+		newMsg, newErr := streamdalProcess(ctx, w.Streamdal, streamdal.OperationTypeProducer, &msg, w.ErrorLogger, w.Logger)
+		if newErr != nil {
+			return errors.New("streamdal error: " + newErr.Error())
 		}
-		// End streamdal shim
+
+		newMsgs = append(newMsgs, *newMsg)
+		// Streamdal shim END
 
 		numPartitions, err := w.partitions(ctx, topic)
 		if err != nil {

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"math"
 	"sort"
 	"strconv"
@@ -527,6 +526,9 @@ type ReaderConfig struct {
 	// This flag is being added to retain backwards-compatibility, so it will be
 	// removed in a future version of kafka-go.
 	OffsetOutOfRangeError bool
+
+	// Turn Streamdal integration on/off
+	EnableStreamdal bool
 }
 
 // Validate method validates ReaderConfig properties.
@@ -749,18 +751,17 @@ func NewReader(config ReaderConfig) *Reader {
 		go r.run(cg)
 	}
 
-	// Begin streamdal shim
-	sd, err := streamdal.New(&streamdal.Config{
-		ShutdownCtx: context.Background(),
-		ClientType:  streamdal.ClientTypeShim,
-	})
-	if err != nil {
-		// NewReader() can't return an error, so panic
-		panic(err)
-	}
+	// Streamdal shim BEGIN
+	if config.EnableStreamdal {
+		sc, err := streamdalSetup()
+		if err != nil {
+			// NewReader does not return error, can only panic
+			panic("unable to setup streamdal for reader: " + err.Error())
+		}
 
-	r.Streamdal = sd
-	// End streamdal shim
+		r.Streamdal = sc
+	}
+	// Streamdal shim END
 
 	return r
 }
@@ -875,24 +876,14 @@ func (r *Reader) FetchMessage(ctx context.Context) (Message, error) {
 					m.error = io.ErrUnexpectedEOF
 				}
 
-				// Begin streamdal shim
-				resp := r.Streamdal.Process(ctx, &streamdal.ProcessRequest{
-					ComponentName: "kafka",
-					OperationType: streamdal.OperationTypeConsumer,
-					OperationName: m.message.Topic,
-					Data:          m.message.Value,
-				})
-				if resp.Status == streamdal.ExecStatusError {
-					r.withErrorLogger(func(l Logger) {
-						log.Printf("error applying Streamdal rules: %s", *resp.StatusMessage)
-					})
-					continue
+				// Streamdal shim BEGIN
+				newMsg, newErr := streamdalProcess(ctx, r.Streamdal, streamdal.OperationTypeConsumer, &m.message, r.config.ErrorLogger, r.config.Logger)
+				if newErr != nil {
+					return Message{}, errors.New("streamdal error: " + newErr.Error())
 				}
+				// Streamdal shim END
 
-				m.message.Value = resp.Data
-				// End streamdal shim
-
-				return m.message, m.error
+				return *newMsg, m.error // Streamdal mod: return newMsg instead of m.message
 			}
 		}
 	}
