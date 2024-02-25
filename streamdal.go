@@ -15,6 +15,7 @@ const (
 
 	StreamdalDefaultComponentName = "kafka"
 	StreamdalDefaultOperationName = "unknown"
+	StreamdalContextValueKey      = "streamdal-runtime-config"
 )
 
 // StreamdalRuntimeConfig is an optional configuration structure that can be
@@ -74,7 +75,7 @@ func streamdalProcess(ctx context.Context, sc *streamdal.Streamdal, ot streamdal
 	// Maybe extract runtime config from context
 	var src *StreamdalRuntimeConfig
 	if ctx != nil {
-		src = ctx.Value("streamdal-runtime-config").(*StreamdalRuntimeConfig)
+		src, _ = ctx.Value(StreamdalContextValueKey).(*StreamdalRuntimeConfig)
 	}
 
 	// Generate an audience from the provided parameters

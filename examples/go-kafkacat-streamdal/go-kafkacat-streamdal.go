@@ -27,6 +27,8 @@ package main
 
 import (
 	"bufio"
+	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/signal"
@@ -35,46 +37,35 @@ import (
 
 	"github.com/alecthomas/kingpin"
 	kafka "github.com/streamdal/segmentio-kafka-go"
+	streamdal "github.com/streamdal/streamdal/sdks/go"
 )
 
 var (
-	verbosity    = 1
-	exitEOF      = false
-	eofCnt       = 0
-	partitionCnt = 0
-	keyDelim     = ""
-	sigs         chan os.Signal
+	keyDelim               = ""
+	sigs                   chan os.Signal
+	streamdalComponentName string
+	streamdalOperationName string
+	streamdalStrictErrors  bool
 )
 
-func runProducer(config *, topic string, partition int32) {
+func runWriter(config *kafka.WriterConfig, topic string, partition int) {
 	// Create a producer that has Streamdal enabled
-	p, err := kafka.NewProducer(config, true)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to create producer: %s\n", err)
+	w := kafka.NewWriter(*config)
+	if w == nil {
+		fmt.Fprint(os.Stderr, ">> Failed to create writer\n")
 		os.Exit(1)
 	}
 
-	fmt.Fprintf(os.Stderr, "Created Producer %v, topic %s [%d]\n", p, topic, partition)
+	fmt.Fprintf(os.Stderr, ">> Created Writer, topic %s [partition %d]\n", topic, partition)
 
-	tp := kafka.TopicPartition{Topic: &topic, Partition: partition}
-
-	go func(drs chan kafka.Event) {
-		for ev := range drs {
-			m, ok := ev.(*kafka.Message)
-			if !ok {
-				continue
-			}
-			if m.TopicPartition.Error != nil {
-				fmt.Fprintf(os.Stderr, "%% Delivery error: %v\n", m.TopicPartition)
-			} else if verbosity >= 2 {
-				fmt.Fprintf(os.Stderr, "%% Delivered %v\n", m)
-			}
-		}
-	}(p.Events())
+	if streamdalComponentName != kafka.StreamdalDefaultComponentName || streamdalOperationName != kafka.StreamdalDefaultOperationName || streamdalStrictErrors {
+		fmt.Fprintf(os.Stderr, ">> Streamdal runtime-config enabled: component=%s, operation=%s, strict-errors=%v\n", streamdalComponentName, streamdalOperationName, streamdalStrictErrors)
+	}
 
 	reader := bufio.NewReader(os.Stdin)
 	stdinChan := make(chan string)
 
+	// Read input from stdin and send to stdinChan
 	go func() {
 		for true {
 			line, err := reader.ReadString('\n')
@@ -97,7 +88,7 @@ func runProducer(config *, topic string, partition int32) {
 	for run == true {
 		select {
 		case sig := <-sigs:
-			fmt.Fprintf(os.Stderr, "%% Terminating on signal %v\n", sig)
+			fmt.Fprintf(os.Stderr, ">> Terminating on signal %v\n", sig)
 			run = false
 
 		case line, ok := <-stdinChan:
@@ -106,8 +97,12 @@ func runProducer(config *, topic string, partition int32) {
 				break
 			}
 
-			msg := kafka.Message{TopicPartition: tp}
+			msg := kafka.Message{
+				Topic:     topic,
+				Partition: partition,
+			}
 
+			// If keyDelim is set, split the line into key and value
 			if keyDelim != "" {
 				vec := strings.SplitN(line, keyDelim, 2)
 				if len(vec[0]) > 0 {
@@ -120,126 +115,108 @@ func runProducer(config *, topic string, partition int32) {
 				msg.Value = ([]byte)(line)
 			}
 
-			if err = p.Produce(&msg, nil); err != nil {
-				fmt.Fprintf(os.Stderr, "%% Produce error: %v\n", err)
+			// Inject Streamdal runtime-config into the context IF component name, operation or strict-errors are set
+			ctx := injectRuntimeConfig(context.Background(), streamdalComponentName, streamdalOperationName, streamdalStrictErrors)
+
+			if err := w.WriteMessages(ctx, msg); err != nil {
+				fmt.Fprintf(os.Stderr, ">> Produce error: %v\n", err)
 			}
 		}
 	}
 
-	fmt.Fprintf(os.Stderr, "%% Flushing %d message(s)\n", p.Len())
-	p.Flush(10000)
-	fmt.Fprintf(os.Stderr, "%% Closing\n")
-	p.Close()
+	fmt.Fprintf(os.Stderr, ">> Closing\n")
+	w.Close()
 }
 
-func runConsumer(config *kafka.ConfigMap, topics []string) {
+func runReader(config *kafka.ReaderConfig) {
+	topics := config.Topic
+
+	if len(config.GroupTopics) > 0 {
+		topics = fmt.Sprintf("%+v", config.GroupTopics)
+	}
+
 	// Create a consumer that has Streamdal enabled
-	c, err := kafka.NewConsumer(config, true)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to create consumer: %s\n", err)
+	r := kafka.NewReader(*config)
+	if r == nil {
+		fmt.Fprint(os.Stderr, "Failed to create reader\n")
 		os.Exit(1)
 	}
 
-	fmt.Fprintf(os.Stderr, "%% Created Consumer %v\n", c)
+	fmt.Fprintf(os.Stderr, ">> Created Reader for topic(s) %+v, using last-offset\n", topics)
 
-	c.SubscribeTopics(topics, func(c *kafka.Consumer, ev kafka.Event) error {
-		var err error = nil
-		switch e := ev.(type) {
-		case kafka.AssignedPartitions:
-			fmt.Fprintf(os.Stderr, "%% %v\n", e)
-			err = c.Assign(e.Partitions)
-			partitionCnt = len(e.Partitions)
-			eofCnt = 0
-		case kafka.RevokedPartitions:
-			fmt.Fprintf(os.Stderr, "%% %v\n", e)
-			err = c.Unassign()
-			partitionCnt = 0
-			eofCnt = 0
-		}
-		return err
-	})
+	if streamdalComponentName != kafka.StreamdalDefaultComponentName || streamdalOperationName != kafka.StreamdalDefaultOperationName || streamdalStrictErrors {
+		fmt.Fprintf(os.Stderr, ">> Streamdal runtime-config enabled: component=%s, operation=%s, strict-errors=%v\n", streamdalComponentName, streamdalOperationName, streamdalStrictErrors)
+	}
 
 	run := true
+	ctx, cancel := context.WithCancel(context.Background())
 
+	// Watch for termination signal
 	go func() {
 		sig := <-sigs
-		fmt.Fprintf(os.Stderr, "%% Terminating on signal %v\n", sig)
+		fmt.Fprintf(os.Stderr, ">> Terminating on signal %v\n", sig)
 		run = false
+		cancel()
 	}()
 
 	for run == true {
-		ev := c.Poll(1000)
-		switch e := ev.(type) {
-		case *kafka.Message:
-			if verbosity >= 2 {
-				fmt.Fprintf(os.Stderr, "%% %v:\n", e.TopicPartition)
-			}
-			if keyDelim != "" {
-				if e.Key != nil {
-					fmt.Printf("%s%s", string(e.Key), keyDelim)
-				} else {
-					fmt.Printf("%s", keyDelim)
-				}
+		// Inject Streamdal runtime-config into the context IF component name, operation or strict-errors are set
+		ctx = injectRuntimeConfig(ctx, streamdalComponentName, streamdalOperationName, streamdalStrictErrors)
+
+		// ReadMessage auto-commits offsets
+		msg, err := r.ReadMessage(ctx)
+		if err != nil {
+			if errors.Is(err, context.Canceled) {
+				fmt.Fprint(os.Stderr, ">> Detected interrupt, exiting consumer\n")
+				run = false
+				break
 			}
 
-			fmt.Println(string(e.Value))
-		case kafka.PartitionEOF:
-			fmt.Fprintf(os.Stderr, "%% Reached %v\n", e)
-			eofCnt++
-			if exitEOF && eofCnt >= partitionCnt {
-				run = false
-			}
-		case kafka.Error:
-			// Errors should generally be considered as informational, the client will try to automatically recover.
-			fmt.Fprintf(os.Stderr, "%% Error: %v\n", e)
-		case kafka.OffsetsCommitted:
-			if verbosity >= 2 {
-				fmt.Fprintf(os.Stderr, "%% %v\n", e)
-			}
-		case nil:
-			// Ignore, Poll() timed out.
-		default:
-			fmt.Fprintf(os.Stderr, "%% Unhandled event %T ignored: %v\n", e, e)
+			fmt.Fprintf(os.Stderr, ">> Fetch error: %v\n", err)
+			continue
 		}
+
+		fmt.Printf("%s\n", msg.Value)
 	}
 
-	fmt.Fprintf(os.Stderr, "%% Closing consumer\n")
-	c.Close()
+	fmt.Fprintf(os.Stderr, ">> Closing consumer\n")
+	r.Close()
 }
 
-type configArgs struct {
-	conf kafka.ConfigMap
-}
+func injectRuntimeConfig(ctx context.Context, cn, on string, se bool) context.Context {
+	if cn != kafka.StreamdalDefaultComponentName || on != kafka.StreamdalDefaultOperationName || se {
+		src := &kafka.StreamdalRuntimeConfig{
+			Audience: &streamdal.Audience{},
+		}
 
-func (c *configArgs) String() string {
-	return "FIXME"
-}
+		if cn != "" {
+			src.Audience.ComponentName = cn
+		}
 
-func (c *configArgs) Set(value string) error {
-	return c.conf.Set(value)
-}
+		if on != "" {
+			src.Audience.OperationName = on
+		}
 
-func (c *configArgs) IsCumulative() bool {
-	return true
+		if se {
+			src.StrictErrors = true
+		}
+
+		ctx = context.WithValue(ctx, kafka.StreamdalContextValueKey, src)
+	}
+
+	return ctx
 }
 
 func main() {
 	sigs = make(chan os.Signal)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 
-	_, libver := kafka.LibraryVersion()
-	kingpin.Version(fmt.Sprintf("confluent-kafka-go (w/ streamdal) (librdkafka v%s)", libver))
-
-	// Default config
-	var confargs configArgs
-	confargs.conf = kafka.ConfigMap{"session.timeout.ms": 6000}
-
 	/* General options */
 	brokers := kingpin.Flag("broker", "Bootstrap broker(s)").Required().String()
-	kingpin.Flag("config", "Configuration property (prop=val)").Short('X').PlaceHolder("PROP=VAL").SetValue(&confargs)
 	keyDelimArg := kingpin.Flag("key-delim", "Key and value delimiter (empty string=dont print/parse key)").Default("").String()
-	verbosityArg := kingpin.Flag("verbosity", "Output verbosity level").Short('v').Default("1").Int()
-	printLinkInfo := kingpin.Flag("link-info", "Print librdkafka link info").Bool()
+	kingpin.Flag("streamdal-component-name", "Streamdal component name").Default("kafka").StringVar(&streamdalComponentName)
+	kingpin.Flag("streamdal-operation-name", "Streamdal operation name").Default(kafka.StreamdalDefaultOperationName).StringVar(&streamdalOperationName)
+	kingpin.Flag("streamdal-strict-errors", "Streamdal enable strict errors").Default("false").BoolVar(&streamdalStrictErrors)
 
 	/* Producer mode options */
 	modeP := kingpin.Command("produce", "Produce messages")
@@ -250,35 +227,32 @@ func main() {
 	modeC := kingpin.Command("consume", "Consume messages").Default()
 	group := modeC.Flag("group", "Consumer group").Required().String()
 	topics := modeC.Arg("topic", "Topic(s) to subscribe to").Required().Strings()
-	initialOffset := modeC.Flag("offset", "Initial offset").Short('o').Default(kafka.OffsetBeginning.String()).String()
-	exitEOFArg := modeC.Flag("eof", "Exit when EOF is reached for all partitions").Bool()
 
 	mode := kingpin.Parse()
-
-	if *printLinkInfo {
-		// This is useful for debugging build types
-		fmt.Printf("librdkafka link information: %s\n", kafka.LibrdkafkaLinkInfo)
-	}
-
-	verbosity = *verbosityArg
 	keyDelim = *keyDelimArg
-	exitEOF = *exitEOFArg
-	confargs.conf["bootstrap.servers"] = *brokers
 
 	switch mode {
 	case "produce":
-		confargs.conf["produce.offset.report"] = true
-		runProducer((*kafka.ConfigMap)(&confargs.conf), *topic, int32(*partition))
+		wc := &kafka.WriterConfig{
+			Brokers:         []string{*brokers},
+			EnableStreamdal: true,
+		}
+
+		runWriter(wc, *topic, *partition)
 
 	case "consume":
-		confargs.conf["group.id"] = *group
-		confargs.conf["go.events.channel.enable"] = true
-		confargs.conf["go.application.rebalance.enable"] = true
-		confargs.conf["auto.offset.reset"] = *initialOffset
-		// Enable generation of PartitionEOF events to track
-		// when end of partition is reached.
-		confargs.conf["enable.partition.eof"] = exitEOF
-		runConsumer((*kafka.ConfigMap)(&confargs.conf), *topics)
-	}
+		rc := &kafka.ReaderConfig{
+			Brokers:         []string{*brokers},
+			Partition:       *partition,
+			StartOffset:     kafka.LastOffset,
+			EnableStreamdal: true,
+		}
 
+		if *group != "" && *topics != nil {
+			rc.GroupTopics = *topics
+			rc.GroupID = *group
+		}
+
+		runReader(rc)
+	}
 }
