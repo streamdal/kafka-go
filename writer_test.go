@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/segmentio/kafka-go/sasl/plain"
+	"github.com/streamdal/segmentio-kafka-go/sasl/plain"
 )
 
 func TestBatchQueue(t *testing.T) {

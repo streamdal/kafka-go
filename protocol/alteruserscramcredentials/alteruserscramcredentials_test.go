@@ -3,8 +3,8 @@ package alteruserscramcredentials_test
 import (
 	"testing"
 
-	"github.com/segmentio/kafka-go/protocol/alteruserscramcredentials"
-	"github.com/segmentio/kafka-go/protocol/prototest"
+	"github.com/streamdal/segmentio-kafka-go/protocol/alteruserscramcredentials"
+	"github.com/streamdal/segmentio-kafka-go/protocol/prototest"
 )
 
 const (

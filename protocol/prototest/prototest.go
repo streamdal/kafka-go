@@ -7,7 +7,7 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/segmentio/kafka-go/protocol"
+	"github.com/streamdal/segmentio-kafka-go/protocol"
 )
 
 func deepEqual(x1, x2 interface{}) bool {

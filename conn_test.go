@@ -13,8 +13,9 @@ import (
 	"testing"
 	"time"
 
-	ktesting "github.com/segmentio/kafka-go/testing"
 	"golang.org/x/net/nettest"
+
+	ktesting "github.com/streamdal/segmentio-kafka-go/testing"
 )
 
 type timeout struct{}

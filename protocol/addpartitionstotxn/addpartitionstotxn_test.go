@@ -3,8 +3,8 @@ package addpartitionstotxn_test
 import (
 	"testing"
 
-	"github.com/segmentio/kafka-go/protocol/addpartitionstotxn"
-	"github.com/segmentio/kafka-go/protocol/prototest"
+	"github.com/streamdal/segmentio-kafka-go/protocol/addpartitionstotxn"
+	"github.com/streamdal/segmentio-kafka-go/protocol/prototest"
 )
 
 func TestAddPartitionsToTxnRequest(t *testing.T) {

@@ -3,8 +3,8 @@ package describeclientquotas_test
 import (
 	"testing"
 
-	"github.com/segmentio/kafka-go/protocol/describeclientquotas"
-	"github.com/segmentio/kafka-go/protocol/prototest"
+	"github.com/streamdal/segmentio-kafka-go/protocol/describeclientquotas"
+	"github.com/streamdal/segmentio-kafka-go/protocol/prototest"
 )
 
 const (

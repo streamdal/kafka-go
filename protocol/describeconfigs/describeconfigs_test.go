@@ -7,8 +7,9 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/segmentio/kafka-go/protocol"
 	"github.com/stretchr/testify/require"
+
+	"github.com/streamdal/segmentio-kafka-go/protocol"
 )
 
 func TestResponse_Merge(t *testing.T) {

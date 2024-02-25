@@ -5,8 +5,9 @@ import (
 	"errors"
 	"testing"
 
-	ktesting "github.com/segmentio/kafka-go/testing"
 	"github.com/stretchr/testify/assert"
+
+	ktesting "github.com/streamdal/segmentio-kafka-go/testing"
 )
 
 func TestDescribeUserScramCredentials(t *testing.T) {

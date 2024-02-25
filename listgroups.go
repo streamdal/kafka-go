@@ -5,7 +5,7 @@ import (
 	"context"
 	"net"
 
-	"github.com/segmentio/kafka-go/protocol/listgroups"
+	"github.com/streamdal/segmentio-kafka-go/protocol/listgroups"
 )
 
 // ListGroupsRequest is a request to the ListGroups API.

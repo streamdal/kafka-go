@@ -1,6 +1,6 @@
 package kafka
 
-import "github.com/segmentio/kafka-go/protocol"
+import "github.com/streamdal/segmentio-kafka-go/protocol"
 
 // Broker represents a kafka broker in a kafka cluster.
 type Broker struct {

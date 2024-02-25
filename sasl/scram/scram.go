@@ -6,8 +6,9 @@ import (
 	"crypto/sha512"
 	"hash"
 
-	"github.com/segmentio/kafka-go/sasl"
 	"github.com/xdg-go/scram"
+
+	"github.com/streamdal/segmentio-kafka-go/sasl"
 )
 
 // Algorithm determines the hash function used by SCRAM to protect the user's

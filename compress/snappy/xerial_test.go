@@ -7,7 +7,8 @@ import (
 	"testing"
 
 	"github.com/klauspost/compress/snappy"
-	goxerialsnappy "github.com/segmentio/kafka-go/compress/snappy/go-xerial-snappy"
+
+	goxerialsnappy "github.com/streamdal/segmentio-kafka-go/compress/snappy/go-xerial-snappy"
 )
 
 // Wrap an io.Reader or io.Writer to disable all copy optimizations like

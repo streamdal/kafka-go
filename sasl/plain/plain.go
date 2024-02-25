@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/segmentio/kafka-go/sasl"
+	"github.com/streamdal/segmentio-kafka-go/sasl"
 )
 
 // Mechanism implements the PLAIN mechanism and passes the credentials in clear

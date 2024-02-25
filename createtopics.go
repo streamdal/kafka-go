@@ -7,7 +7,7 @@ import (
 	"net"
 	"time"
 
-	"github.com/segmentio/kafka-go/protocol/createtopics"
+	"github.com/streamdal/segmentio-kafka-go/protocol/createtopics"
 )
 
 // CreateTopicRequests represents a request sent to a kafka broker to create
