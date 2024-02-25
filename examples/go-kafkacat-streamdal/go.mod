@@ -4,8 +4,8 @@ go 1.22.0
 
 require (
 	github.com/alecthomas/kingpin v2.2.6+incompatible
-	github.com/streamdal/confluent-kafka-go/v2 v2.3.0
-	github.com/streamdal/segmentio-kafka-go v0.4.47-streamdal
+	github.com/streamdal/segmentio-kafka-go v0.4.47-sd
+	github.com/streamdal/streamdal/sdks/go v0.1.10
 )
 
 require (
@@ -19,7 +19,6 @@ require (
 	github.com/relistan/go-director v0.0.0-20200406104025-dbbf5d95248d // indirect
 	github.com/segmentio/kafka-go v0.4.47 // indirect
 	github.com/streamdal/streamdal/libs/protos v0.1.25 // indirect
-	github.com/streamdal/streamdal/sdks/go v0.1.10 // indirect
 	github.com/tetratelabs/wazero v1.6.0 // indirect
 	golang.org/x/net v0.20.0 // indirect
 	golang.org/x/sys v0.16.0 // indirect
